@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Document</title>
+  <script type="text/javascript" src="./smoothie.js"></script>
+  <script type="text/javascript" src="./apexcharts.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- Step 1 - Include the fusioncharts core library -->
+  <script type="text/javascript" src="https://cdn.fusioncharts.com/fusioncharts/latest/fusioncharts.js"></script>
+  <!-- Step 2 - Include the fusion theme -->
+  <script type="text/javascript"
+    src="https://cdn.fusioncharts.com/fusioncharts/latest/themes/fusioncharts.theme.fusion.js"></script>
+
+  <script>
+    FusionCharts.ready(function () {
+      new FusionCharts({
+        type: "realtimelinedy",
+        renderAt: "chart-container",
+        width: "600",
+        height: "400",
+        dataFormat: "json",
+        dataSource: {
+          chart: {
+            caption: "Average Electricity Consumption Reading",
+            subCaption:
+              "Hillside Village Aparments{br}Rate per unit vs Units Consumed",
+            showRealTimeValue: "0",
+            numberprefix: "$",
+            setadaptiveymin: "1",
+            setadaptivesymin: "1",
+            yAxisName: "Rate (cents/kilowatt-hour)",
+            sYAxisName: "Units",
+            labeldisplay: "Rotate",
+            numDisplaySets: "10",
+            theme: "fusion",
+          },
+          categories: [
+            {
+              category: [
+                {
+                  label: "Start",
+                },
+              ],
+            },
+          ],
+          dataset: [
+            {
+              seriesname: "Rate/unit",
+              plotToolText: "<b>$label</b><br>$seriesName: <b>$dataValue</b>",
+              data: [
+                {
+                  value: "2.3",
+                },
+              ],
+            },
+            {
+              seriesname: "Units Consumed",
+              parentyaxis: "S",
+              plotToolText:
+                "<b>$label</b><br>$seriesName # <b>$dataValue Units</b>",
+              data: [
+                {
+                  value: "23",
+                },
+              ],
+            },
+          ],
+        },
+        events: {
+          initialized: function (evt, arg) {
+            // Get reference to the chart
+            var chartRef = evt.sender;
+            function formatTime(num) {
+              return num <= 9 ? "0" + num : num;
+            }
+
+            function updateData() {
+              const socket = io();
+              socket.on("traffic", function (data) {
+                var d = new Date(),
+                h = (d.getHours() < 10 ? "0" : "") + d.getHours(),
+                m = (d.getMinutes() < 10 ? "0" : "") + d.getMinutes(),
+                s = (d.getSeconds() < 10 ? "0" : "") + d.getSeconds(),
+                label = h + ":" + m + ":" + s;
+                strData="&label=" + label + "&value=" + data.tx + "|" + data.rx
+                console.log(strData);
+                chartRef.feedData(strData);
+              });
+            }
+            chartRef.intervalUpdateId = setInterval(updateData, 1000);
+          },
+
+          disposed: function (evt, args) {
+            clearInterval(evt.sender.intervalUpdateId);
+          },
+        },
+      }).render();
+    });
+  </script>
+</head>
+
+<body>
+  <div id="chart-container"></div>
+</body>
+
+</html>
